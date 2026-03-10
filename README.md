@@ -1,4 +1,5 @@
-// This header file contain header pin info for GPIO. I could not upload it in repo becuase of GM authentication.
+// One Hearder and two .c file are available 
+//This header file contain header pin info for GPIO. I could not upload it in repo becuase of GM authentication.
 /*
  * stm32f401xx_GPIO_drive.h
  *
@@ -649,6 +650,87 @@ void SPI_CloseTransmission(SPI_Handle_t *pSPIHandle)
     pSPIHandle->TxLen = 0;
     pSPIHandle->TxState = SPI_READY;
 }
+
+
+
+////// Here is the test file for SPI.c
+
+/*
+ * SPI_tx_test.c
+ *
+ *  Created on: Oct 11, 2025
+ *      Author: MZH9PH
+ */
+//pb9 = nss , according to chatgpt = pb12 = nss
+//pb13 = sck
+//pb14 - miso
+//pb15 = mosi
+//alternate function mode is AF05.
+//All are available in Data sheet in page 46. alternate function mode.
+#include "stm32_f401re.h"
+#include "stm32f4_01SPI_driver.h"
+#include "stm32f401xx_GPIO_drive.h"
+#include <string.h>
+
+void SPI2_Inits (void)
+{
+    SPI_Handle_t SPI2Handle; // Create handle for SPI2
+
+    SPI2Handle.pSPIx = SPI2;  // Use SPI2 peripheral base address
+
+    SPI2Handle.SPI_Config.SPI_DeviceMode = SPI_DEVICE_MODE_MASTER;
+    SPI2Handle.SPI_Config.SPI_BusConfig = SPI_BUS_CONFIG_FD;
+    SPI2Handle.SPI_Config.SPI_SclkSpeed = SPI_SCLK_SPEED_DIV2;  // e.g., 8 MHz / 8 = 1 MHz
+    SPI2Handle.SPI_Config.SPI_DFF = SPI_DFF_8BITS;
+    SPI2Handle.SPI_Config.SPI_CPOL = SPI_CPOL_LOW;
+    SPI2Handle.SPI_Config.SPI_CPHA = SPI_CPHA_LOW;
+    SPI2Handle.SPI_Config.SPI_SSM = SPI_SSM_EN; // Software slave management enable for NNS pin
+
+    SPI_Init(&SPI2Handle);
+
+}
+void SPI2_GPIOInits(void)
+{
+	GPIO_Handle_t SPIPins;
+	SPIPins.pGPIOx = GPIOB;
+	SPIPins.GPIO_PinConfig.GPIO_PinAltFunMode = 5;
+	SPIPins.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
+	SPIPins.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP;
+	SPIPins.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
+	SPIPins.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_FAST;
+
+	// SCLK 13
+	SPIPins.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_13;
+	GPIO_Init(&SPIPins);
+
+	//MOSI 15
+	SPIPins.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_15;
+	GPIO_Init(&SPIPins);
+
+	//MISO 14
+	SPIPins.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_14;
+	GPIO_Init(&SPIPins);
+
+	//NSS 9 , in chatgpt 12
+	SPIPins.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_12;
+	GPIO_Init(&SPIPins);
+
+
+}
+
+
+int main (void)
+{
+	char user_data[] = "Hello World";
+	SPI2_GPIOInits();
+	SPI2_Inits();
+	SPI_SSIConfig(SPI2, ENABLE);
+	SPI_PeripheralControl(SPI2, ENABLE);
+	SPI_SendData (SPI2, (uint8_t*)user_data, strlen(user_data));
+	while(1);
+	return 0;
+}
+
 
 
 
